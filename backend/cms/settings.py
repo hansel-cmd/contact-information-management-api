@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'rest_framework', # this shows a template page for api in the web browser
     'rest_framework_simplejwt',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -135,3 +136,13 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(minutes=40),
 }
+
+PHONENUMBER_DEFAULT_REGION = "PH"
+# PHONENUMBER_DEFAULT_FORMAT = "INTERNATIONAL"
+
+import os
+# Actual directory user files go to
+MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
+
+# URL used to access the media
+MEDIA_URL = '/media/'

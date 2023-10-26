@@ -1,12 +1,12 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
-from .models import User
+from .models import User, Contact
 
 class SignUpSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only = True, required = True)
     first_name = serializers.CharField(required = True)
     last_name = serializers.CharField(required = True)
-    email = serializers.CharField(required = True)
+    email = serializers.EmailField(required = True)
 
     class Meta:
         model = User
@@ -62,4 +62,38 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'phone_number',
+        ]
+
+class UserPublicDataSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    username = serializers.CharField(read_only = True)
+    first_name = serializers.CharField(read_only = True)
+    last_name = serializers.CharField(read_only = True)
+
+
+class CreateContactSerializer(serializers.ModelSerializer):
+    profile = serializers.ImageField(required=False)
+    user = UserPublicDataSerializer(read_only = True)
+
+    class Meta:
+        model = Contact
+        fields = [
+            'user',
+            'profile',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'house_no',
+            'street',
+            'city',
+            'province',
+            'zipcode',
+            'delivery_house_no',
+            'delivery_street',
+            'delivery_city',
+            'delivery_province',
+            'delivery_zipcode',
+            'is_favorite',
+            'is_blocked',
+            'is_emergency'
         ]
