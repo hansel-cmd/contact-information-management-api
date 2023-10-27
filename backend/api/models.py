@@ -9,6 +9,7 @@ def upload_to(instance, filename):
 
 
 class User(AbstractUser):
+    profile = models.ImageField(upload_to=upload_to,null = True)
     phone_number = PhoneNumberField(max_length=13, null=True)
     is_email_confirmed = models.BooleanField(default=False)
 

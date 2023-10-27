@@ -1,12 +1,14 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from .models import User, Contact
+from phonenumber_field.serializerfields import PhoneNumberField
+
 
 class SignUpSerializer(serializers.ModelSerializer):
-    confirm_password = serializers.CharField(write_only = True, required = True)
-    first_name = serializers.CharField(required = True)
-    last_name = serializers.CharField(required = True)
-    email = serializers.EmailField(required = True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
 
     class Meta:
         model = User
@@ -25,13 +27,13 @@ class SignUpSerializer(serializers.ModelSerializer):
         return data
 
     def validate_email(self, value):
-        user = User.objects.filter(email = value)
+        user = User.objects.filter(email=value)
         if user.exists():
             raise serializers.ValidationError(f"{value} is already taken.")
         return value
 
     def validate_username(self, value):
-        user = User.objects.filter(username = value)
+        user = User.objects.filter(username=value)
         if user.exists():
             raise serializers.ValidationError(f"{value} is already taken.")
         return value
@@ -42,6 +44,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     original User model we have. We also have to hash our password before
     storing into the database.
     """
+
     def create(self, validated_data):
         validated_data.pop('confirm_password', None)
 
@@ -50,9 +53,19 @@ class SignUpSerializer(serializers.ModelSerializer):
 
         instance = User.objects.create(**validated_data)
         return instance
-    
+
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    The fields are optional when updating. If there is no value
+    provided in the field, the current value will be used.
+    """
+    username = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    phone_number = PhoneNumberField(required=False)
+
     class Meta:
         model = User
         fields = [
@@ -64,21 +77,38 @@ class UserSerializer(serializers.ModelSerializer):
             'phone_number',
         ]
 
+
+class UserPasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(required=True, write_only = True)
+    new_password = serializers.CharField(required=True, write_only = True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'old_password',
+            'new_password',
+            'confirm_password',
+        ]
+
+
 class UserPublicDataSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only = True)
-    username = serializers.CharField(read_only = True)
-    first_name = serializers.CharField(read_only = True)
-    last_name = serializers.CharField(read_only = True)
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
 
 
-class CreateContactSerializer(serializers.ModelSerializer):
+class ContactSerializer(serializers.ModelSerializer):
     profile = serializers.ImageField(required=False)
-    user = UserPublicDataSerializer(read_only = True)
+    user = UserPublicDataSerializer(read_only=True)
 
     class Meta:
         model = Contact
         fields = [
             'user',
+            'id',
             'profile',
             'first_name',
             'last_name',
