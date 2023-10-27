@@ -79,8 +79,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserPasswordSerializer(serializers.ModelSerializer):
-    old_password = serializers.CharField(required=True, write_only = True)
-    new_password = serializers.CharField(required=True, write_only = True)
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
 
     class Meta:
@@ -103,6 +103,9 @@ class UserPublicDataSerializer(serializers.Serializer):
 class ContactSerializer(serializers.ModelSerializer):
     profile = serializers.ImageField(required=False)
     user = UserPublicDataSerializer(read_only=True)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    phone_number = PhoneNumberField(required=False)
 
     class Meta:
         model = Contact
