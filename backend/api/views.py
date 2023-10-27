@@ -349,7 +349,7 @@ class SearchContactsView(
         mixins.PermissionAuthenticationMixin,
         mixins.UserQuerySetMixin,
         generics.ListAPIView):
-    queryset = User.objects.filter(is_staff=False)
+    queryset = Contact.objects.all()
     serializer_class = ContactSerializer
 
     def get(self, request, *args, **kwargs):
