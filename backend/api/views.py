@@ -1,14 +1,17 @@
 from django.contrib.auth.hashers import make_password
+from smtplib import SMTPException
 from django.db.models import Q
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework_simplejwt.tokens import RefreshToken
 
-
-from .serializers import UserSerializer, SignUpSerializer, ContactSerializer, UserPasswordSerializer
-from .models import User, Contact
 from . import mixins
+from .serializers import *
+from .models import User, Contact, EmailConfirmationToken
+from .token_generator import generate_token
+from .utils import send_confirmation_email
 
 # Create your views here.
 
@@ -32,7 +35,39 @@ class SignupView(generics.CreateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class UserView(
+class SendEmailConfirmationView(
+    # mixins.PermissionAuthenticationMixin,
+        generics.CreateAPIView):
+
+    def post(self, request):
+        """
+        We do not need a serializer for this.
+        We simply need to create a new email confirmation token row.
+        """
+
+        user_id = request.data.get('user_id', None)
+        email = request.data.get('email', None)
+        try:
+            user = User.objects.get(id=user_id, email=email)
+        except User.DoesNotExist:
+            return Response({"error": f"User does not exist."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        token = generate_token()
+        instance = EmailConfirmationToken(user=user, token=token)
+        instance.save()
+
+        try:
+            send_confirmation_email(email=email, user_id=user, token=token)
+        except SMTPException as e:
+            print('error', e)
+            return Response("Error", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"success": "A confirmation code is sent to your email."},
+                        status=status.HTTP_200_OK)
+
+
+class UserListView(
         mixins.PermissionAuthenticationMixin,
         generics.ListAPIView):
     queryset = User.objects.filter(is_staff=False)
@@ -374,3 +409,22 @@ class SearchContactsView(
         contact = Contact.objects.filter(query)
         serializer = ContactSerializer(contact, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LogoutView(
+        mixins.PermissionAuthenticationMixin,
+        generics.UpdateAPIView):
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh_token', None)
+        if not refresh_token:
+            return Response({"error": "Refresh Token is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response({"error": e.args[0]}, status=status.HTTP_400_BAD_REQUEST)

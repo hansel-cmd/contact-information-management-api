@@ -17,6 +17,10 @@ class User(AbstractUser):
 class EmailConfirmationToken(models.Model):
     user = models.ForeignKey(
         User, default=None, on_delete=models.SET_NULL, null=True)
+    token = models.CharField(max_length=6)
+    is_expired = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Contact(models.Model):

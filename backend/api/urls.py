@@ -8,11 +8,14 @@ from . import views
 
 urlpatterns = [
     path('', views.IndexView.as_view(), name = 'index'),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # serves as the login feature
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # serves as the login feature
+    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('signup/', views.SignupView.as_view(), name = 'signup'),
+    path('send-email-confirmation/', views.SendEmailConfirmationView.as_view(), name='send-email-confirmation'),
+    path('logout/', views.LogoutView.as_view(), name='logout'),
 
-    path('users/', views.UserView.as_view(), name = 'users'),
+
+    path('users/', views.UserListView.as_view(), name = 'users'),
     path('user/me/', views.RetrieveUserView.as_view(), name = 'user'),
     path('user/update/', views.UpdateUserView.as_view(), name = 'user-update'),
     path('user/update-account/', views.UpdateUserView.as_view(), name = 'user-update-account'),

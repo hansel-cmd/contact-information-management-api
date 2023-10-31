@@ -4,6 +4,13 @@ from .models import User, Contact
 from phonenumber_field.serializerfields import PhoneNumberField
 
 
+class UserPublicDataSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
+
+
 class SignUpSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(required=True)
@@ -65,16 +72,20 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
     phone_number = PhoneNumberField(required=False)
+    is_email_confirmed = serializers.BooleanField(required=False)
+    profile = serializers.ImageField(required=False)
 
     class Meta:
         model = User
         fields = [
             'id',
+            'profile',
             'username',
             'email',
             'first_name',
             'last_name',
             'phone_number',
+            'is_email_confirmed'
         ]
 
 
@@ -91,13 +102,6 @@ class UserPasswordSerializer(serializers.ModelSerializer):
             'new_password',
             'confirm_password',
         ]
-
-
-class UserPublicDataSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    username = serializers.CharField(read_only=True)
-    first_name = serializers.CharField(read_only=True)
-    last_name = serializers.CharField(read_only=True)
 
 
 class ContactSerializer(serializers.ModelSerializer):
