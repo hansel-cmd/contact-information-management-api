@@ -8,6 +8,7 @@ from . import views
 
 urlpatterns = [
     path('', views.IndexView.as_view(), name = 'index'),
+    path('template/', views.test, name = 'template'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # serves as the login feature
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('signup/', views.SignupView.as_view(), name = 'signup'),

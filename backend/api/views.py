@@ -428,3 +428,8 @@ class LogoutView(
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response({"error": e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.shortcuts import render
+def test(request):
+    return render(request, 'api/confirmation_email.html')
