@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
+from datetime import timedelta
+from django.utils import timezone
 
 def upload_to(instance, filename):
     return 'images/{filename}'.format(filename=filename)
@@ -19,9 +21,15 @@ class EmailConfirmationToken(models.Model):
         User, default=None, on_delete=models.SET_NULL, null=True)
     token = models.CharField(max_length=6)
     is_expired = models.BooleanField(default=False)
+    will_expire_on = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        if not self.pk:  # To run only on the creation of a new instance
+            self.will_expire_on = timezone.now() + timedelta(minutes=15)
+        super(EmailConfirmationToken, self).save(*args, **kwargs)
+    
 
 class Contact(models.Model):
     user = models.ForeignKey(
