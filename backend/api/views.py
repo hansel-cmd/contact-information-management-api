@@ -12,6 +12,7 @@ from .serializers import *
 from .models import User, Contact, EmailConfirmationToken
 from .token_generator import generate_token
 from .utils import send_confirmation_email
+from .pagination import CustomPagination
 
 # Create your views here.
 
@@ -66,6 +67,21 @@ class SendEmailConfirmationView(
         return Response({"success": "A confirmation code is sent to your email."},
                         status=status.HTTP_200_OK)
 
+
+class UniqueUsernameView(generics.RetrieveAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        username = request.query_params.get('username')
+        if username:
+            user = User.objects.filter(username = username)
+            if user.exists():
+                return Response({
+                    "error": "Username is already taken."
+                }, status=status.HTTP_200_OK)
+
+        return Response({}, status=status.HTTP_200_OK)
 
 class UserListView(
         mixins.PermissionAuthenticationMixin,
@@ -405,9 +421,16 @@ class SearchContactsView(
             Q(delivery_city__icontains=q) | \
             Q(delivery_province__icontains=q) | \
             Q(delivery_zipcode__icontains=q)
+        
+        contacts = Contact.objects.filter(query, user = request.user)
 
-        contact = Contact.objects.filter(query)
-        serializer = ContactSerializer(contact, many=True)
+        paginator = CustomPagination()
+        result = paginator.paginate_queryset(contacts, request)
+        if result is not None:
+            serializer = ContactSerializer(result, many = True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = ContactSerializer(contacts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

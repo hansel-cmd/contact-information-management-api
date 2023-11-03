@@ -47,11 +47,13 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'phonenumber_field',
     'django_crontab', # this will run a scheduler
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -171,4 +173,11 @@ DEFAULT_FROM_EMAIL = 'no-reply@contact-ease.com'
 # CRON JOBS Scheduler
 CRONJOBS = [
     ('*/1 * * * *', 'api.cronjobs.make_email_code_expire')
+]
+
+# CORS HEADERS
+CORS_URLS_REGEX = r"^/api/.*"
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]

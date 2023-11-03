@@ -15,6 +15,7 @@ urlpatterns = [
     path('send-email-confirmation/', views.SendEmailConfirmationView.as_view(), name='send-email-confirmation'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
+    path('unique-username/', views.UniqueUsernameView.as_view(), name = 'unique-username'),
 
     path('users/', views.UserListView.as_view(), name = 'users'),
     path('user/me/', views.RetrieveUserView.as_view(), name = 'user'),
