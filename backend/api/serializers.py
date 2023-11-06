@@ -1,6 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
-from .models import User, Contact, EmailConfirmationToken
+from .models import *
 from phonenumber_field.serializerfields import PhoneNumberField
 
 
@@ -35,9 +35,9 @@ class SignUpSerializer(serializers.ModelSerializer):
         return data
 
     def validate_email(self, value):
-        # user = User.objects.filter(email=value)
-        # if user.exists():
-        #     raise serializers.ValidationError(f"{value} is already taken.")
+        user = User.objects.filter(email=value)
+        if user.exists():
+            raise serializers.ValidationError(f"{value} is already taken.")
         return value
 
     def validate_username(self, value):
@@ -91,6 +91,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserPasswordSerializer(serializers.ModelSerializer):
+    """Changing of Password via Settings"""
     old_password = serializers.CharField(required=True, write_only=True)
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
@@ -157,4 +158,47 @@ class EmailConfirmationTokenSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "The User does not exist or Email Confirmation Code is invalid/expired.")
 
+        return data
+
+
+class ForgotPasswordTokenSerializer(serializers.ModelSerializer):
+    email = serializers.CharField()
+
+    class Meta:
+        model = ForgotPasswordToken
+        fields = [
+            'email',
+            'token'
+        ]
+
+    def validate(self, data):
+        email = data.get('email', None)
+        token = data.get('token', None)
+        try:
+            ForgotPasswordToken.objects.get(
+                user__email=email, token=token, is_expired=False)
+        except ForgotPasswordToken.DoesNotExist:
+            raise serializers.ValidationError(
+                "The User does not exist or Forgot Password Code is invalid/expired.")
+
+        return data
+
+
+class ResetPasswordSerializer(serializers.ModelSerializer):
+    """Resetting of a Forgotten Password"""
+    email =serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'password',
+            'confirm_password',
+        ]
+
+    def validate(self, data):
+        if 'password' in data and 'confirm_password' in data and data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
         return data

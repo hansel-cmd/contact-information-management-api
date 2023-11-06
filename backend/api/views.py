@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import mixins
 from .serializers import *
-from .models import User, Contact, EmailConfirmationToken
+from .models import *
 from .token_generator import generate_token
 from .utils import send_confirmation_email
 from .pagination import CustomPagination
@@ -60,7 +60,8 @@ class SendEmailConfirmationView(
         instance.save()
 
         try:
-            send_confirmation_email(email=email, user_id=user, token=token)
+            send_confirmation_email(
+                email=email, user_id=user, token=token, service="email verification")
         except SMTPException as e:
             print('error', e)
             return Response("Error", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -93,6 +94,74 @@ class VerifyEmailConfirmationTokenView(generics.UpdateAPIView):
         })
 
 
+class GenerateForgotPasswordTokenView(generics.CreateAPIView, generics.RetrieveAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = ForgotPasswordTokenSerializer
+
+    # validate-forgot-password-token
+    def get(self, request, *args, **kwargs):
+        data = {
+            'email': request.query_params.get('email', None),
+            'token': request.query_params.get('token', None),
+        }
+
+        serializer = ForgotPasswordTokenSerializer(data=data)  # type: ignore
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"success": "Provided token is correct."},
+                        status=status.HTTP_200_OK)
+
+    # generate-forgot-password-token
+    def post(self, request):
+        """
+        We do not need a serializer for this.
+        We simply need to create a new token row.
+        """
+        email = request.data.get('email', None)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "Email is not linked to any account."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        token = generate_token()
+        instance = ForgotPasswordToken(user=user, token=token)
+        instance.save()
+
+        try:
+            send_confirmation_email(
+                email=email, user_id=user, token=token, service="forgot password")
+        except SMTPException as e:
+            print('error', e)
+            return Response("Error", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"success": "A forgot password code is sent to your email."},
+                        status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(generics.UpdateAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = ResetPasswordSerializer
+
+    def put(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        serializer = ResetPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "Email is not linked to any account."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(password)
+        user.save()
+        return Response({"success": "Password has been reset."},
+                        status=status.HTTP_200_OK)
+
+
 class UniqueUsernameView(generics.RetrieveAPIView):
     queryset = User.objects.filter(is_staff=False)
     serializer_class = UserSerializer
@@ -107,6 +176,37 @@ class UniqueUsernameView(generics.RetrieveAPIView):
                 }, status=status.HTTP_200_OK)
 
         return Response({}, status=status.HTTP_200_OK)
+
+
+class UniqueEmailView(generics.RetrieveAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        email = request.query_params.get('email')
+        if email:
+            user = User.objects.filter(email=email)
+            if user.exists():
+                return Response({
+                    "error": "Email is already taken."
+                }, status=status.HTTP_200_OK)
+
+        return Response({}, status=status.HTTP_200_OK)
+
+
+class IsEmailExistingView(generics.RetrieveAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        email = request.query_params.get('email')
+        if email:
+            user = User.objects.filter(email=email)
+            if user.exists():
+                return Response({}, status=status.HTTP_200_OK)
+        return Response({
+            "error": "This email is not linked to any account."
+        }, status=status.HTTP_200_OK)
 
 
 class UserListView(
@@ -147,7 +247,6 @@ class DestroyUserView(generics.DestroyAPIView):
         serializer = UserSerializer(instance)
         instance.delete()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 class UpdateUserView(

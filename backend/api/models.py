@@ -29,6 +29,21 @@ class EmailConfirmationToken(models.Model):
         if not self.pk:  # To run only on the creation of a new instance
             self.will_expire_on = timezone.now() + timedelta(minutes=15)
         super(EmailConfirmationToken, self).save(*args, **kwargs)
+
+
+class ForgotPasswordToken(models.Model):
+    user = models.ForeignKey(
+        User, default=None, on_delete=models.SET_NULL, null=True)
+    token = models.CharField(max_length=6)
+    is_expired = models.BooleanField(default=False)
+    will_expire_on = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # To run only on the creation of a new instance
+            self.will_expire_on = timezone.now() + timedelta(minutes=15)
+        super(ForgotPasswordToken, self).save(*args, **kwargs)
     
 
 class Contact(models.Model):

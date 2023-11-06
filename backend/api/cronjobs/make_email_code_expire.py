@@ -1,5 +1,16 @@
-from api.models import EmailConfirmationToken
+from api.models import EmailConfirmationToken, ForgotPasswordToken
 from django.utils import timezone
+
+def main():
+    make_email_code_expire()
+    make_forgot_password_code_expire()
+    
+
+def make_forgot_password_code_expire():
+    records = ForgotPasswordToken.objects.filter(will_expire_on__lt = timezone.now())
+    records.update(is_expired = True)
+    print(records)
+
 
 def make_email_code_expire():
     records = EmailConfirmationToken.objects.filter(will_expire_on__lt = timezone.now())

@@ -9,14 +9,19 @@ from . import views
 urlpatterns = [
     path('', views.IndexView.as_view(), name = 'index'),
     path('template/', views.test, name = 'template'),
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # serves as the login feature
-    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('login/', TokenObtainPairView.as_view(), name='token-obtain-pair'), # serves as the login feature
+    path('login/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('signup/', views.SignupView.as_view(), name = 'signup'),
     path('send-email-confirmation/', views.SendEmailConfirmationView.as_view(), name='send-email-confirmation'),
     path('verify-email-confirmation/', views.VerifyEmailConfirmationTokenView.as_view(), name='verify-email-confirmation'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
     path('unique-username/', views.UniqueUsernameView.as_view(), name = 'unique-username'),
+    path('unique-email/', views.UniqueEmailView.as_view(), name = 'unique-email'),
+    path('is-email-existing/', views.IsEmailExistingView.as_view(), name = 'is-email-existing'),
+    path('generate-forgot-password-token/', views.GenerateForgotPasswordTokenView.as_view(), name='generate-forgot-password-token'),
+    path('validate-forgot-password-token/', views.GenerateForgotPasswordTokenView.as_view(), name='validate-forgot-password-token'),
+    path('reset-password/', views.ResetPasswordView.as_view(), name='reset-password'),
 
     path('users/', views.UserListView.as_view(), name = 'users'),
     path('user/me/', views.RetrieveUserView.as_view(), name = 'user'),
