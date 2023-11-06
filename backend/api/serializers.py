@@ -1,6 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
-from .models import User, Contact
+from .models import User, Contact, EmailConfirmationToken
 from phonenumber_field.serializerfields import PhoneNumberField
 
 
@@ -20,6 +20,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            'id',
             'first_name',
             'last_name',
             'email',
@@ -34,9 +35,9 @@ class SignUpSerializer(serializers.ModelSerializer):
         return data
 
     def validate_email(self, value):
-        user = User.objects.filter(email=value)
-        if user.exists():
-            raise serializers.ValidationError(f"{value} is already taken.")
+        # user = User.objects.filter(email=value)
+        # if user.exists():
+        #     raise serializers.ValidationError(f"{value} is already taken.")
         return value
 
     def validate_username(self, value):
@@ -134,3 +135,26 @@ class ContactSerializer(serializers.ModelSerializer):
             'is_blocked',
             'is_emergency'
         ]
+
+
+class EmailConfirmationTokenSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField()
+
+    class Meta:
+        model = EmailConfirmationToken
+        fields = [
+            'user_id',
+            'token'
+        ]
+
+    def validate(self, data):
+        user_id = data.get('user_id', None)
+        token = data.get('token', None)
+        try:
+            EmailConfirmationToken.objects.get(
+                user_id=user_id, token=token, is_expired=False)
+        except EmailConfirmationToken.DoesNotExist:
+            raise serializers.ValidationError(
+                "The User does not exist or Email Confirmation Code is invalid/expired.")
+
+        return data

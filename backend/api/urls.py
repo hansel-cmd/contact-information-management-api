@@ -13,6 +13,7 @@ urlpatterns = [
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('signup/', views.SignupView.as_view(), name = 'signup'),
     path('send-email-confirmation/', views.SendEmailConfirmationView.as_view(), name='send-email-confirmation'),
+    path('verify-email-confirmation/', views.VerifyEmailConfirmationTokenView.as_view(), name='verify-email-confirmation'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
     path('unique-username/', views.UniqueUsernameView.as_view(), name = 'unique-username'),
@@ -22,6 +23,7 @@ urlpatterns = [
     path('user/update/', views.UpdateUserView.as_view(), name = 'user-update'),
     path('user/update-account/', views.UpdateUserView.as_view(), name = 'user-update-account'),
     path('user/update-password/', views.UpdateUserPasswordView.as_view(), name = 'user-update-password'),
+    path('users/delete/<int:pk>', views.DestroyUserView.as_view(), name = 'delete-user'),
 
     path('search-contacts/', views.SearchContactsView.as_view(), name = 'search-contacts'),
 

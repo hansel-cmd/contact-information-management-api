@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from django.contrib.auth.hashers import make_password
 from smtplib import SMTPException
 from django.db.models import Q
@@ -68,6 +69,30 @@ class SendEmailConfirmationView(
                         status=status.HTTP_200_OK)
 
 
+class VerifyEmailConfirmationTokenView(generics.UpdateAPIView):
+    queryset = User.objects.filter(is_staff=False, is_email_confirmed=False)
+    serializer_class = UserSerializer
+
+    def put(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        serializer = EmailConfirmationTokenSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id, is_email_confirmed=False)
+        except User.DoesNotExist:
+            return Response({
+                "error": "User does not exist or Email is already verified."
+            },  status=status.HTTP_400_BAD_REQUEST)
+
+        user.is_email_confirmed = True
+        user.save()
+        return Response({
+            "success": "Email has been verified."
+        })
+
+
 class UniqueUsernameView(generics.RetrieveAPIView):
     queryset = User.objects.filter(is_staff=False)
     serializer_class = UserSerializer
@@ -75,13 +100,14 @@ class UniqueUsernameView(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         username = request.query_params.get('username')
         if username:
-            user = User.objects.filter(username = username)
+            user = User.objects.filter(username=username)
             if user.exists():
                 return Response({
                     "error": "Username is already taken."
                 }, status=status.HTTP_200_OK)
 
         return Response({}, status=status.HTTP_200_OK)
+
 
 class UserListView(
         mixins.PermissionAuthenticationMixin,
@@ -105,6 +131,23 @@ class RetrieveUserView(
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DestroyUserView(generics.DestroyAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = UserSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Override destroy method so we can customize the Response.
+        By default, destroy method returns HTTP_204_NO_CONTENT.
+        """
+        instance = self.get_object()
+        print(instance, 'hahaha')
+        serializer = UserSerializer(instance)
+        instance.delete()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 class UpdateUserView(
@@ -421,13 +464,13 @@ class SearchContactsView(
             Q(delivery_city__icontains=q) | \
             Q(delivery_province__icontains=q) | \
             Q(delivery_zipcode__icontains=q)
-        
-        contacts = Contact.objects.filter(query, user = request.user)
+
+        contacts = Contact.objects.filter(query, user=request.user)
 
         paginator = CustomPagination()
         result = paginator.paginate_queryset(contacts, request)
         if result is not None:
-            serializer = ContactSerializer(result, many = True)
+            serializer = ContactSerializer(result, many=True)
             return paginator.get_paginated_response(serializer.data)
 
         serializer = ContactSerializer(contacts, many=True)
@@ -453,6 +496,5 @@ class LogoutView(
             return Response({"error": e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
 
-from django.shortcuts import render
 def test(request):
     return render(request, 'api/confirmation_email.html')
