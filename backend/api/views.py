@@ -7,6 +7,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+from rest_framework_simplejwt.tokens import AccessToken
 
 from . import mixins
 from .serializers import *
@@ -21,6 +24,25 @@ from .pagination import CustomPagination
 class IndexView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"Hello": "World!"})
+    
+class CustomTokenObtainPairView(TokenObtainPairView):
+
+    # Override the post method to customize the response
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        # For example, add extra data to the response
+        if response.status_code == status.HTTP_200_OK and response.data:
+            access_token = response.data.get('access')
+            decoded_token = AccessToken(access_token)
+
+            user_id = decoded_token.payload.get('user_id')
+            user = User.objects.get(id = user_id)
+            
+            serializer = UserSerializer(user)
+            response.data['user'] = serializer.data
+
+        return response
 
 
 class SignupView(generics.CreateAPIView):
