@@ -66,3 +66,7 @@ class Contact(models.Model):
     is_favorite = models.BooleanField(default=False)
     is_blocked = models.BooleanField(default=False)
     is_emergency = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"id={self.pk}, fullName={self.first_name + ' ' + self.last_name}"
+        

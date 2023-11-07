@@ -138,6 +138,59 @@ class ContactSerializer(serializers.ModelSerializer):
         ]
 
 
+class CustomContactSerializer(serializers.ModelSerializer):
+    profile = serializers.ImageField(required=False)
+    user = UserPublicDataSerializer(read_only=True)
+    firstName = serializers.CharField(source='first_name', required=False)
+    lastName = serializers.CharField(source='last_name', required=False)
+    phoneNumber = PhoneNumberField(source='phone_number', required=False)
+    deliveryAddress = serializers.SerializerMethodField()
+    billingAddress = serializers.SerializerMethodField()
+    isFavorite = serializers.BooleanField(source="is_favorite", required=False)
+    isBlocked = serializers.BooleanField(source="is_blocked", required=False)
+    isEmergency = serializers.BooleanField(
+        source="is_emergency", required=False)
+
+    class Meta:
+        model = Contact
+        fields = [
+            'user',
+            'id',
+            'profile',
+            'firstName',
+            'lastName',
+            'phoneNumber',
+            'house_no',
+            'street',
+            'city',
+            'province',
+            'zipcode',
+            'deliveryAddress',
+            'billingAddress',
+            'isFavorite',
+            'isBlocked',
+            'isEmergency'
+        ]
+
+    def get_deliveryAddress(self, instance):
+        return {
+            'houseNo': instance.delivery_house_no,
+            'street': instance.delivery_street,
+            'city': instance.delivery_city,
+            'province': instance.delivery_province,
+            'zipCode': instance.delivery_zipcode,
+        }
+
+    def get_billingAddress(self, instance):
+        return {
+            'houseNo': instance.house_no,
+            'street': instance.street,
+            'city': instance.city,
+            'province': instance.province,
+            'zipCode': instance.zipcode,
+        }
+
+
 class EmailConfirmationTokenSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField()
 
@@ -186,7 +239,7 @@ class ForgotPasswordTokenSerializer(serializers.ModelSerializer):
 
 class ResetPasswordSerializer(serializers.ModelSerializer):
     """Resetting of a Forgotten Password"""
-    email =serializers.CharField(required=True)
+    email = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
 

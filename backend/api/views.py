@@ -38,7 +38,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             user_id = decoded_token.payload.get('user_id')
             user = User.objects.get(id = user_id)
-            
+
             serializer = UserSerializer(user)
             response.data['user'] = serializer.data
 
@@ -352,6 +352,24 @@ class ListCreateContactView(
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    # We needed to override this method so we can customize what it returns.
+    # We can either change the front-end implementation and leave this as it is,
+    # or we can change this and leave the front-end implementation to work as is.
+    # But I think it's easier to change this instead of the front-end, so we change this.
+    def get(self, request, *args, **kwargs):
+        limit = request.query_params.get('limit', None)
+
+        contacts = self.get_queryset()
+
+        paginator = CustomPagination(page_size = limit if limit else 5)
+        result = paginator.paginate_queryset(contacts, request)
+        if result is not None:
+            serializer = CustomContactSerializer(result, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = CustomContactSerializer(contacts, many=True)    
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RetrieveUpdateContactDetailView(
