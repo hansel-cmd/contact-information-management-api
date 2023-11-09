@@ -9,7 +9,6 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken
 from phonenumber_field.validators import validate_international_phonenumber
 
@@ -433,7 +432,7 @@ class RetrieveUpdateContactDetailView(
         boolean_fields = ['is_favorite', 'is_emergency', 'is_blocked']
         for field in boolean_fields:
             if field in data:
-                setattr(contact, field, bool(int(data[field])))
+                setattr(contact, field, bool(int(data[field] == 'true')))
 
         # Check for invalid combinations
         if contact.is_favorite and contact.is_blocked:
