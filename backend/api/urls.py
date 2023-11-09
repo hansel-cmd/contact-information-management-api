@@ -36,6 +36,7 @@ urlpatterns = [
     path('contact/<int:pk>/', views.RetrieveUpdateContactDetailView.as_view(), name = 'contact'),
     path('contact/update/<int:pk>/', views.RetrieveUpdateContactDetailView.as_view(), name = 'update-contact'),
     path('create-contact/', views.ListCreateContactView.as_view(), name = 'create-contact'),
+    path('check-phone-number/', views.CheckPhoneNumberView.as_view(), name = 'check-phone-number'),
 
     path('favorite-contacts/', views.ListFavoriteContactView.as_view(), name = 'favorite-contacts'),
     path('favorite-contact/<int:pk>/', views.RetrieveUpdateFavoriteContactView.as_view(), name = 'favorite-contact'),

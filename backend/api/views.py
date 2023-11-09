@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.hashers import make_password
+from django.core.exceptions import ValidationError
 from smtplib import SMTPException
 from django.db.models import Q
 from rest_framework import generics
@@ -10,6 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken
+from phonenumber_field.validators import validate_international_phonenumber
 
 from . import mixins
 from .serializers import *
@@ -339,6 +341,23 @@ class UpdateUserPasswordView(
         return Response({**serializer.data,
                          'username': request.user.username},
                         status=status.HTTP_200_OK)
+
+
+class CheckPhoneNumberView(generics.RetrieveAPIView):
+
+    def get(self, request, *args, **kwargs):
+        phone_number = request.query_params.get('phoneNumber', None)
+        if not phone_number:
+            return Response({"error": "Phone Number is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validate_international_phonenumber(phone_number)
+        except ValidationError:
+            return Response({"error": "Invalid Phone Number."}, 
+                            status=status.HTTP_200_OK)
+
+        return Response({}, status=status.HTTP_200_OK)
 
 
 class ListCreateContactView(
