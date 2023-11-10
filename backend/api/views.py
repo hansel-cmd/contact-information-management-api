@@ -191,8 +191,20 @@ class UniqueUsernameView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         username = request.query_params.get('username')
+        id = request.query_params.get('id', None)
+        # Check the presence of id as a query parameter
+        # if it is None, the request came from Signing up.
+        if id != None:
+            try:
+                id = int(id)
+            except (ValueError):
+                return Response({"error": "Given id is invalid."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         if username:
             user = User.objects.filter(username=username)
+            if id != None:
+                user = user.exclude(id=id)
             if user.exists():
                 return Response({
                     "error": "Username is already taken."
