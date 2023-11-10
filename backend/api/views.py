@@ -481,7 +481,7 @@ class RetrieveUpdateFavoriteContactView(
                             status=status.HTTP_404_NOT_FOUND)
 
         if contact.is_blocked:
-            return Response({"error": "Cannot add a blocked contact to favorites."},
+            return Response({"error": "A Blocked contact cannot be added to Favorites."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         # Update contact to be favorite or unfavorite
@@ -522,7 +522,7 @@ class RetrieveUpdateEmergencyContactView(
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if contact.is_blocked:
-            return Response({"error": "Cannot add a blocked contact to emergency contacts."},
+            return Response({"error": "A Blocked contact be added to Emergency contacts."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         # Update contact to be an emergency or non-emergency
@@ -563,11 +563,11 @@ class RetrieveUpdateBlockedContactView(
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if contact.is_favorite:
-            return Response({"error": "Cannot add a favorite contact to blocked contacts."},
+            return Response({"error": "A Favorite contact cannot be blocked."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         if contact.is_emergency:
-            return Response({"error": "Cannot add an emergency contact to blocked contacts."},
+            return Response({"error": "An Emergency contact cannot be blocked."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         # Update contact to be an emergency or non-emergency
@@ -604,9 +604,9 @@ class SearchContactsView(
     serializer_class = ContactSerializer
 
     def get(self, request, *args, **kwargs):
-        q = request.query_params.get('q')
-        if not q:
-            return super().get(request, *args, **kwargs)
+        q = request.query_params.get('q', '')
+        limit = request.query_params.get('limit', 5)
+        print('search: ', q, 'limit: ', limit)
 
         query = Q(first_name__icontains=q) | \
             Q(last_name__icontains=q) | \
@@ -624,13 +624,13 @@ class SearchContactsView(
 
         contacts = Contact.objects.filter(query, user=request.user)
 
-        paginator = CustomPagination()
+        paginator = CustomPagination(page_size = int(limit))
         result = paginator.paginate_queryset(contacts, request)
         if result is not None:
-            serializer = ContactSerializer(result, many=True)
+            serializer = CustomContactSerializer(result, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = ContactSerializer(contacts, many=True)
+        serializer = CustomContactSerializer(contacts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
