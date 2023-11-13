@@ -28,6 +28,7 @@ urlpatterns = [
     path('user/update/', views.UpdateUserView.as_view(), name = 'user-update'),
     path('user/update-account/', views.UpdateUserView.as_view(), name = 'user-update-account'),
     path('user/update-password/', views.UpdateUserPasswordView.as_view(), name = 'user-update-password'),
+    path('user/update-email/', views.UpdateUserEmailView.as_view(), name = 'user-update-email'),
     path('users/delete/<int:pk>', views.DestroyUserView.as_view(), name = 'delete-user'),
 
     path('search-contacts/', views.SearchContactsView.as_view(), name = 'search-contacts'),

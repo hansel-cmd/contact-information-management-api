@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from smtplib import SMTPException
 from django.db.models import Q
@@ -25,7 +26,8 @@ from .pagination import CustomPagination
 class IndexView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"Hello": "World!"})
-    
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
 
     # Override the post method to customize the response
@@ -38,7 +40,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             decoded_token = AccessToken(access_token)
 
             user_id = decoded_token.payload.get('user_id')
-            user = User.objects.get(id = user_id)
+            user = User.objects.get(id=user_id)
 
             serializer = UserSerializer(user)
             response.data['user'] = serializer.data
@@ -58,6 +60,44 @@ class SignupView(generics.CreateAPIView):
 
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateUserEmailView(
+        mixins.PermissionAuthenticationMixin,
+        generics.CreateAPIView,
+        generics.UpdateAPIView):
+
+    # Send an email confirmation but this is for updating to a new email
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        email = request.data.get('email', None)
+        if not email:
+            return Response({"error": "Email field is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        token = generate_token()
+        instance = EmailConfirmationToken(user=user, token=token)
+        instance.save()
+
+        try:
+            send_confirmation_email(
+                email=email, user_id=user, token=token, service="email verification")
+        except SMTPException as e:
+            print('error', e)
+            return Response("Error", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"success": "A confirmation code is sent to your email."},
+                        status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        token = request.data.get('token', '')
+        serializer = EmailConfirmationTokenSerializer(
+            data={"user_id": user.id, "token": token})  # type: ignore
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({}, status=status.HTTP_200_OK)
 
 
 class SendEmailConfirmationView(
@@ -219,8 +259,20 @@ class UniqueEmailView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         email = request.query_params.get('email')
+        id = request.query_params.get('id', None)
+        # Check the presence of id as a query parameter
+        # if it is None, the request came from Signing up.
+        if id != None:
+            try:
+                id = int(id)
+            except (ValueError):
+                return Response({"error": "Given id is invalid."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         if email:
             user = User.objects.filter(email=email)
+            if id != None:
+                user = user.exclude(id=id)
             if user.exists():
                 return Response({
                     "error": "Email is already taken."
@@ -316,9 +368,22 @@ class UpdateUserView(
 
 class UpdateUserPasswordView(
         mixins.PermissionAuthenticationMixin,
-        generics.UpdateAPIView):
+        generics.RetrieveUpdateAPIView):
     queryset = User.objects.filter(is_staff=False)
     serializer_class = UserPasswordSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        password = request.query_params.get('oldPassword', None)
+        if not password:
+            return Response({"error": "Old Password is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if user.check_password(password):
+            return Response({}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Old Password is incorrect."},
+                        status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
         # Check if the data [format] passed is valid.
@@ -361,11 +426,11 @@ class CheckPhoneNumberView(generics.RetrieveAPIView):
         if not phone_number:
             return Response({"error": "Phone Number is required."},
                             status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             validate_international_phonenumber(phone_number)
         except ValidationError:
-            return Response({"error": "Invalid Phone Number."}, 
+            return Response({"error": "Invalid Phone Number."},
                             status=status.HTTP_200_OK)
 
         return Response({}, status=status.HTTP_200_OK)
@@ -392,13 +457,13 @@ class ListCreateContactView(
 
         contacts = self.get_queryset()
 
-        paginator = CustomPagination(page_size = limit if limit else 5)
+        paginator = CustomPagination(page_size=limit if limit else 5)
         result = paginator.paginate_queryset(contacts, request)
         if result is not None:
             serializer = CustomContactSerializer(result, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = CustomContactSerializer(contacts, many=True)    
+        serializer = CustomContactSerializer(contacts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -636,7 +701,7 @@ class SearchContactsView(
 
         contacts = Contact.objects.filter(query, user=request.user)
 
-        paginator = CustomPagination(page_size = int(limit))
+        paginator = CustomPagination(page_size=int(limit))
         result = paginator.paginate_queryset(contacts, request)
         if result is not None:
             serializer = CustomContactSerializer(result, many=True)
