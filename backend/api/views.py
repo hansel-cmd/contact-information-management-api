@@ -683,7 +683,10 @@ class SearchContactsView(
     def get(self, request, *args, **kwargs):
         q = request.query_params.get('q', '')
         limit = request.query_params.get('limit', 5)
-        print('search: ', q, 'limit: ', limit)
+        is_favorite = request.query_params.get('isFavorite', None)
+        is_blocked = request.query_params.get('isBlocked', None)
+        is_emergency = request.query_params.get('isEmergency', None)
+        print('search: ', q, 'limit: ', limit, is_favorite)
 
         query = Q(first_name__icontains=q) | \
             Q(last_name__icontains=q) | \
@@ -699,7 +702,18 @@ class SearchContactsView(
             Q(delivery_province__icontains=q) | \
             Q(delivery_zipcode__icontains=q)
 
+        if is_favorite:
+            is_favorite = is_favorite == '1'
+            query = query & Q(is_favorite = is_favorite)
+        if is_blocked:
+            is_blocked = is_blocked == '1'
+            query = query & Q(is_blocked = is_blocked)
+        if is_emergency:
+            is_emergency = is_emergency == '1'
+            query = query & Q(is_emergency = is_emergency)
+
         contacts = Contact.objects.filter(query, user=request.user)
+
 
         paginator = CustomPagination(page_size=int(limit))
         result = paginator.paginate_queryset(contacts, request)
