@@ -6,3 +6,4 @@ django-phonenumber-field[phonenumberslite]
 python-dotenv
 pytz
 django-crontab
+Pillow
