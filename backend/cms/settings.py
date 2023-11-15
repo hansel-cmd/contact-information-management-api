@@ -140,8 +140,8 @@ AUTH_USER_MODEL = 'api.User'
 
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ['Bearer'],
-    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(minutes=60),
+    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(minutes=75),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False
 }
